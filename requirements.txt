@@ -2,3 +2,4 @@ Flask
 fuzzywuzzy
 transformers
 torch
+gunicorn

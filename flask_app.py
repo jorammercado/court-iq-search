@@ -3,6 +3,7 @@ import json
 from fuzzywuzzy import fuzz
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import torch
+import os
 
 app = Flask(__name__)
 
@@ -73,4 +74,5 @@ def ask_question():
     return jsonify({'answer': response})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)  # Adjust port as necessary to avoid conflicts
+    port = int(os.environ.get('PORT', 5001))  # Default to 5001 if PORT environment variable is not set
+    app.run(debug=False, host='0.0.0.0', port=port)
