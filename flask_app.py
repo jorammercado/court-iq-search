@@ -1,8 +1,6 @@
 from flask import Flask, request, jsonify
 import json
 from fuzzywuzzy import fuzz
-from transformers import GPT2Tokenizer, GPT2LMHeadModel
-import torch
 import os
 
 app = Flask(__name__)
@@ -13,11 +11,6 @@ with open('allConvertedData.json', 'r') as file:
 
 # Convert the list to a dictionary for Q&A
 qa_dict = {data[i].lower(): data[i + 1] for i in range(0, len(data), 2)}
-
-# Load the fine-tuned GPT-2 model and tokenizer
-model_path = './fine_tuned_gpt2_sports_model2'
-tokenizer = GPT2Tokenizer.from_pretrained(model_path)
-model = GPT2LMHeadModel.from_pretrained(model_path)
 
 def find_closest_question(user_question, questions):
     user_question = user_question.lower()
@@ -32,36 +25,13 @@ def find_closest_question(user_question, questions):
 
     return closest_question, max_similarity
 
-def generate_model_response(user_question):
-    prompt = "Predict the outcome of: " + user_question
-    encoded_input = tokenizer(prompt, return_tensors='pt', padding=True, truncation=True, max_length=512)
-    input_ids = encoded_input['input_ids']
-    attention_mask = encoded_input['attention_mask']
-    
-    output_sequences = model.generate(
-        input_ids=input_ids,
-        attention_mask=attention_mask,
-        max_length=50,
-        temperature=0.8,
-        top_k=40,
-        top_p=0.85,
-        do_sample=True,
-        num_return_sequences=1
-    )
-    
-    answer = tokenizer.decode(output_sequences[0], skip_special_tokens=True)
-    return answer
-
 def generate_response(user_question):
-    if user_question.lower().startswith("game:"):
-        return generate_model_response(user_question)
+    closest_question, max_similarity = find_closest_question(user_question, qa_dict.keys())
+    
+    if max_similarity > 60:
+        return qa_dict[closest_question]
     else:
-        closest_question, max_similarity = find_closest_question(user_question, qa_dict.keys())
-        
-        if max_similarity > 60:
-            return qa_dict[closest_question]
-        else:
-            return generate_model_response(user_question)
+        return "I'm not sure how to answer that. Can you please ask another question or rephrase your question?"
 
 @app.route('/ask', methods=['POST'])
 def ask_question():
